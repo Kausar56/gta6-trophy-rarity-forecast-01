@@ -138,7 +138,11 @@ def forecast_case(case) -> dict:
         if p:
             px.append(math.log1p(hours(parse_time(h["at"]))))
             py.append(math.log(float(p)))
-    p_last = float(history[-1]["players_tracked"]) if history else 1000.0
+    p_last = 1000.0
+    for h in reversed(history):
+        if h.get("players_tracked"):
+            p_last = float(h["players_tracked"])
+            break
     x_last = math.log1p(hours(at_t))
     x_target = math.log1p(hours(target_t))
     if len(px) >= 2:
@@ -221,6 +225,10 @@ def forecast_case(case) -> dict:
         rate_med = clamp_rate(100.0 * e_target / players_target)
 
         sigma = 0.30 + 0.50 * math.sqrt(horizon_days)
+        if slopes[i] is None:
+            # No fit of its own: the slope is entirely borrowed from the
+            # band, so the honest interval is wider.
+            sigma += 0.15
         if growth > 1.8:
             sigma += 0.22 * math.log(growth)
         sigma += min(0.45, fit_sd[i])
